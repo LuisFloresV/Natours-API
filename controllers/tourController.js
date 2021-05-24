@@ -4,11 +4,8 @@ const Tour = require('../models/tourModel')
 exports.getAllTours = async (req, res) => {
   try {
     //Build Query
-    const queryObj = { ...req.query }
-    const excludedFields = ['page', 'sort', 'limit', 'fields']
-    excludedFields.forEach((el) => delete queryObj[el])
+    const { page, sort, limit, fields, ...queryObj } = req.query
     const query = Tour.find(queryObj)
-
     //Execute Query
     const tours = await query
 
