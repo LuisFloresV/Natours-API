@@ -1,6 +1,8 @@
+/* eslint-disable func-names */
+
 const mongoose = require('mongoose')
 const slugify = require('slugify')
-const validator = require('validator')
+// const validator = require('validator')
 
 const tourSchema = new mongoose.Schema({
   name: {
@@ -15,93 +17,93 @@ const tourSchema = new mongoose.Schema({
   slug: String,
   duration: {
     type: Number,
-    required: [true, 'A tour must have a duration']
+    required: [true, 'A tour must have a duration'],
   },
   maxGroupSize: {
     type: Number,
-    required: [true, 'A tour must have a group size']
+    required: [true, 'A tour must have a group size'],
   },
   difficulty: {
     type: String,
     required: [true, 'A tour must have a difficulty'],
     enum: {
       values: ['easy', 'medium', 'difficult'],
-      message: 'Difficulty is either: easy, medium or difficult'
-    }
+      message: 'Difficulty is either: easy, medium or difficult',
+    },
   },
   ratingsAverage: {
     type: Number,
     default: 4.5,
     min: [1, 'Rating must be above 1.0'],
-    max: [5, 'Rating must be below 5.0']
+    max: [5, 'Rating must be below 5.0'],
   },
   ratingsQuantity: {
     type: Number,
-    default: 0
+    default: 0,
   },
   price: {
     type: Number,
-    required: [true, 'A tour must have a price']
+    required: [true, 'A tour must have a price'],
   },
   priceDiscount: {
     type: Number,
     validate: {
-      validator: function (val) {
+      validator(val) {
         // Doesn't work on update
         return val < this.price
       },
-      message: 'Discount price ({VALUE}) should be below regular price'
-    }
+      message: 'Discount price ({VALUE}) should be below regular price',
+    },
   },
   summary: {
     type: String,
     trim: true,
-    required: [true, 'A tour must have a description']
+    required: [true, 'A tour must have a description'],
   },
   description: {
     type: String,
-    trim: true
+    trim: true,
   },
   imageCover: {
     type: String,
-    required: true
+    required: true,
   },
   images: [String],
   createdAt: {
     type: Date,
     default: Date.now(),
-    select: false
+    select: false,
   },
   startDates: [Date],
   secretTour: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 },
-  {
-    toJSON: {
-      virtuals: true
-    }
-  })
+{
+  toJSON: {
+    virtuals: true,
+  },
+})
 
-//Not in the DB
+// Not in the DB
 tourSchema.virtual('durationWeeks').get(function () {
   return this.duration / 7
 })
 
-//Document Middleware: runs before .save() and .create() not for update()
+// Document Middleware: runs before .save() and .create() not for update()
 tourSchema.pre('save', function (next) {
   this.slug = slugify(this.name, { lower: true })
   next()
 })
 
-//Query Middleware
+// Query Middleware
 tourSchema.pre(/^find/, function (next) {
   this.find({ secretTour: { $ne: true } })
   next()
 })
 
-//Aggregation Middleware
+// Aggregation Middleware
 tourSchema.pre('aggregate', function (next) {
   this.pipeline().unshift({ $match: { secretTour: { $ne: true } } })
   next()

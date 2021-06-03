@@ -1,22 +1,34 @@
 const dotenv = require('dotenv')
+
 dotenv.config({ path: './config.env' })
-const app = require('./app')
 const mongoose = require('mongoose')
+const app = require('./app')
 
+process.on('uncaughtException', (err) => {
+  console.error(`Uncaught: ${err.name} ${err.message}`)
+  process.exit(1)
+})
 
-//MongoDB Connection
+// MongoDB Connection
 const DB = process.env.DB.replace('<PASSWORD>', process.env.DB_PASSWORD)
 mongoose
   .connect(DB, {
     useNewUrlParser: true,
     useCreateIndex: true,
     useFindAndModify: false,
-    useUnifiedTopology: true
+    useUnifiedTopology: true,
   })
   .then(() => console.log('Connected to DB'))
-  .catch(err => console.log('Something went wrong:' + err))
 
-//Server Listening
+// Server Listening
 const port = process.env.PORT || 8001
 
-app.listen(port, () => console.log(`App listening on Port ${port}`))
+const server = app.listen(port, () => console.log(`App listening on Port ${port}`))
+
+process.on('unhandledRejection', (err) => {
+  console.error(`Unhandled: ${err.name} ${err.message}`)
+  // Gracefully Shutdown
+  server.close(() => {
+    process.exit(1)
+  })
+})

@@ -16,7 +16,7 @@ app.use(express.static('./public'))
 app.use('/api/v1/tours', tourRouter)
 app.use('/api/v1/users', userRouter)
 
-//404 Middleware
+// 404 Middleware
 app.all('*', (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl}`, 404))
 })
