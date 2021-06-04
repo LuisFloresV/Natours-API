@@ -1,6 +1,14 @@
 const express = require('express')
+
 const router = express.Router()
-const { createUser, deleteUser, getAllUsers, getUser, updateUser } = require('../controllers/userController')
+const { signUp, login } = require('../controllers/authController')
+const {
+  createUser, deleteUser, getAllUsers, getUser, updateUser,
+} = require('../controllers/userController')
+
+// Authentication
+router.post('/signup', signUp)
+router.post('/login', login)
 
 router
   .route('/')
