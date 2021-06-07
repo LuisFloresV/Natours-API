@@ -16,6 +16,7 @@ exports.signUp = catchAsync(async (req, res, next) => {
     password: req.body.password,
     passwordConfirm: req.body.passwordConfirm,
     passwordChangedAt: req.body.passwordChangedAt,
+    role: req.body.role,
   })
 
   const token = signToken(newUser._id)
@@ -56,10 +57,16 @@ exports.protect = catchAsync(async (req, res, next) => {
 
   // Verify User still exists
   const freshUser = await User.findById({ _id: decoded.id })
-  console.log(freshUser)
   if (!freshUser) return next(new AppError('The user no longer exists', 401))
 
   if (freshUser.changedPasswordAfter(decoded.iat)) return next(new AppError('User changed password recently. Please login again', 401))
   req.user = freshUser
   next()
 })
+
+exports.restrictTo = (...roles) => (req, res, next) => {
+  if (!roles.includes(req.user.role)) {
+    return next(new AppError('You do not have permission to perform this action', 403))
+  }
+  next()
+}
