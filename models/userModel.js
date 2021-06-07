@@ -35,6 +35,7 @@ const userSchema = new mongoose.Schema({
       message: 'Password confirmation should match',
     },
   },
+  passwordChangedAt: Date,
 })
 
 userSchema.pre('save', async function (next) {
@@ -49,6 +50,15 @@ userSchema.pre('save', async function (next) {
 
 userSchema.methods.correctPassword = async function (candidatePassword, userPassword) {
   return await bcrypt.compare(candidatePassword, userPassword)
+}
+
+userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
+  if (this.passwordChangedAt) {
+    const changedTimeStamp = parseInt(this.passwordChangedAt.getTime() / 1000, 10)
+    console.log(changedTimeStamp, JWTTimestamp)
+    return JWTTimestamp < changedTimeStamp
+  }
+  return false
 }
 
 const User = mongoose.model('User', userSchema)
