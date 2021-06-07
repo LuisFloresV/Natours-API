@@ -2,6 +2,8 @@
 /* eslint-disable no-underscore-dangle */
 const jwt = require('jsonwebtoken')
 const { promisify } = require('util')
+const crypto = require('crypto')
+const { create } = require('domain')
 const User = require('../models/userModel')
 const catchAsync = require('../utils/catchAsync')
 const AppError = require('../utils/appError')
@@ -9,6 +11,17 @@ const sendEmail = require('../utils/email')
 
 const signToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET,
   { expiresIn: process.env.JWT_EXPIRES_IN })
+
+const createSendToken = (user, statusCode, res) => {
+  const token = signToken(user._id)
+  res.status(statusCode).json({
+    status: 'success',
+    token,
+    data: {
+      user,
+    },
+  })
+}
 
 exports.signUp = catchAsync(async (req, res, next) => {
   const newUser = await User.create({
@@ -20,15 +33,7 @@ exports.signUp = catchAsync(async (req, res, next) => {
     role: req.body.role,
   })
 
-  const token = signToken(newUser._id)
-
-  res.status(201).json({
-    status: 'success',
-    token,
-    data: {
-      user: newUser,
-    },
-  })
+  createSendToken(newUser, 201, res)
 })
 
 exports.login = catchAsync(async (req, res, next) => {
@@ -37,12 +42,7 @@ exports.login = catchAsync(async (req, res, next) => {
 
   const user = await User.findOne({ email }).select('+password')
   if (!user || !(await user.correctPassword(password, user.password))) return next(new AppError('Invalid credentials!', 401))
-
-  const token = signToken(user._id)
-  res.status(200).json({
-    status: 'success',
-    token,
-  })
+  createSendToken(user, 200, res)
 })
 
 exports.protect = catchAsync(async (req, res, next) => {
@@ -55,9 +55,10 @@ exports.protect = catchAsync(async (req, res, next) => {
 
   // Converts jwt.verify into an async func
   const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET)
-
+  console.log(decoded)
   // Verify User still exists
   const freshUser = await User.findById({ _id: decoded.id })
+  console.log(freshUser)
   if (!freshUser) return next(new AppError('The user no longer exists', 401))
 
   if (freshUser.changedPasswordAfter(decoded.iat)) return next(new AppError('User changed password recently. Please login again', 401))
@@ -97,6 +98,30 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   res.status(200).json({ status: 'success', message: 'Token sent to email' })
 })
 
-exports.resetPassword = (req, res, next) => {
+exports.resetPassword = catchAsync(async (req, res, next) => {
+  const hashedToken = crypto
+    .createHash('sha256')
+    .update(req.params.token)
+    .digest('hex')
+  const user = await User
+    .findOne({ passwordResetToken: hashedToken, passwordResetExpires: { $gt: Date.now() } })
 
-}
+  if (!user) return next(new AppError('Token is invalid or has expired', 400))
+  user.password = req.body.password
+  user.passwordConfirm = req.body.passwordConfirm
+  user.passwordResetToken = undefined
+  user.passwordResetExpires = undefined
+
+  await user.save()
+  createSendToken(user, 200, res)
+})
+
+exports.updatePassword = catchAsync(async (req, res, next) => {
+  const user = await User.findById(req.user.id).select('+password')
+  if (!(await user.correctPassword(req.body.passwordCurrent, user.password))) return next(new AppError('Invalid credentials', 401))
+
+  user.password = req.body.password
+  user.passwordConfirm = req.body.passwordConfirm
+  await user.save()
+  createSendToken(user, 200, res)
+})

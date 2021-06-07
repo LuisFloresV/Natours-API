@@ -44,6 +44,27 @@ const userSchema = new mongoose.Schema({
   passwordChangedAt: Date,
   passwordResetToken: String,
   passwordResetExpires: Date,
+  active: {
+    type: Boolean,
+    default: true,
+    select: false,
+  },
+})
+
+// to JSON
+userSchema.methods.toJSON = function () {
+  const user = this
+  const userObject = user.toObject()
+  delete userObject.password
+  delete userObject.role
+  delete userObject.active
+  return userObject
+}
+
+userSchema.pre('save', async function (next) {
+  if (!this.isModified('password') || this.isNew) return next()
+  this.passwordChangedAt = Date.now() - 1000
+  next()
 })
 
 userSchema.pre('save', async function (next) {
@@ -74,6 +95,11 @@ userSchema.methods.createPasswordResetToken = function () {
   this.passwordResetExpires = Date.now() + 10 * 60 * 1000
   return resetToken
 }
+
+userSchema.pre(/^find/, function (next) {
+  this.find({ active: { $ne: false } })
+  next()
+})
 const User = mongoose.model('User', userSchema)
 
 module.exports = User
