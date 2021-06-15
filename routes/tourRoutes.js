@@ -6,8 +6,12 @@ const {
   createTour, deleteTour, getAllTours, updateTour, getTour, aliasTopTours, getTourStats,
   getMonthlyPlan,
 } = require('../controllers/tourController')
+const reviewRouter = require('./reviewRoutes')
 
 const { protect, restrictTo } = require('../controllers/authController')
+
+// Nested Routes
+router.use('/:tourId/reviews', reviewRouter)
 
 // router.param('id', checkId)
 router.route('/top-5-cheap').get(aliasTopTours, getAllTours)

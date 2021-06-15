@@ -2,7 +2,7 @@ const express = require('express')
 
 const router = express.Router()
 const {
-  signUp, login, forgotPassword, resetPassword, protect, updatePassword,
+  signUp, login, forgotPassword, resetPassword, protect, updatePassword, restrictTo,
 } = require('../controllers/authController')
 const {
   createUser, deleteUser, getAllUsers, getUser, updateUser, updateMe, deleteMe,
