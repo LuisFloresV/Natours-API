@@ -3,6 +3,7 @@
 const User = require('../models/userModel')
 const AppError = require('../utils/appError')
 const catchAsync = require('../utils/catchAsync')
+const { deleteOne } = require('./handlerFactory')
 
 const filterObj = (obj, ...allowedFields) => {
   const newObj = {}
@@ -32,9 +33,7 @@ exports.updateUser = (req, res) => {
   res.status(500).json({ status: 'error', message: 'This route is not yet defined!' })
 }
 
-exports.deleteUser = (req, res) => {
-  res.status(500).json({ status: 'error', message: 'This route is not yet defined!' })
-}
+exports.deleteUser = deleteOne(User)
 
 exports.updateMe = catchAsync(async (req, res, next) => {
   if (req.body.password || req.body.passwordConfirm) return next(new AppError('This route is not for password updates. Please use /updateMyPassword', 400))
