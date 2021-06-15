@@ -1,10 +1,10 @@
 /* eslint-disable consistent-return */
-
 const Tour = require('../models/tourModel')
-const APIFeatures = require('../utils/apiFeatures')
 const catchAsync = require('../utils/catchAsync')
-const AppError = require('../utils/appError')
-const { deleteOne } = require('./handlerFactory')
+const {
+  deleteOne, updateOne, createOne, getOne, getAll,
+} = require('./handlerFactory')
+
 // Route Handlers
 exports.aliasTopTours = (req, res, next) => {
   req.query.limit = '5'
@@ -13,57 +13,11 @@ exports.aliasTopTours = (req, res, next) => {
   next()
 }
 
-exports.createTour = catchAsync(async (req, res, next) => {
-  const newTour = await Tour.create(req.body)
-  res.status(201).json({ status: 'success', data: { tour: newTour } })
-})
-
-exports.getAllTours = catchAsync(async (req, res, next) => {
-  const features = new APIFeatures(Tour.find(), req.query).filter().sort().limitFields()
-    .paginate()
-  const tours = await features.query
-  // Send response
-  res.status(200).json({ status: 'success', results: tours.length, data: { tours } })
-})
-
-exports.getTour = catchAsync(async (req, res, next) => {
-  const tour = await Tour.findById(req.params.id).populate('reviews')
-
-  if (!tour) {
-    return next(new AppError('No tour found with that ID', 404))
-  }
-
-  res.status(200).json({ status: 'success', data: { tour } })
-})
-
-exports.updateTour = catchAsync(async (req, res, next) => {
-  const updatedTour = await Tour.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
-    runValidators: true,
-  })
-
-  if (!updatedTour) {
-    return next(new AppError('No tour found with that ID', 404))
-  }
-
-  res.status(200).json({
-    status: 'success',
-    data: {
-      tour: updatedTour,
-    },
-  })
-})
-
+exports.createTour = createOne(Tour)
+exports.getAllTours = getAll(Tour)
+exports.getTour = getOne(Tour, { path: 'reviews' })
+exports.updateTour = updateOne(Tour)
 exports.deleteTour = deleteOne(Tour)
-// exports.deleteTour = catchAsync(async (req, res, next) => {
-//   const deletedTour = await Tour.findByIdAndDelete(req.params.id)
-
-//   if (!deletedTour) {
-//     return next(new AppError('No tour found with that ID', 404))
-//   }
-
-//   res.status(204).json({ status: 'success', data: null })
-// })
 
 // Aggregation Pipeline
 exports.getTourStats = catchAsync(async (req, res, next) => {
