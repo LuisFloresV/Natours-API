@@ -18,7 +18,7 @@ mongoose
     useFindAndModify: false,
     useUnifiedTopology: true,
   })
-  .then(() => console.log('Connected to DB'))
+  .then(() => ('Connected to DB'))
 
 // Server Listening
 const port = process.env.PORT || 8001
